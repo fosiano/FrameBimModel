@@ -44,6 +44,17 @@ import CameraControls from 'camera-controls';
 
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+const gui = new GUI();
+const myGrid = {
+	//myBoolean: true,
+	//myString: "lil-gui",
+	step: 1.00
+};
+
+
+gui.add( myGrid, 'step', 0.0, 10.00 );   // Number Field
+
 const subsetOfTHREE = {
   MOUSE,
   Vector2,
@@ -61,13 +72,10 @@ const subsetOfTHREE = {
   }
 };
 
+
 var count=0;
-
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
-
 // Controls
 CameraControls.install( { THREE: subsetOfTHREE } );
-
 
 
 //Scene
@@ -94,69 +102,36 @@ scene.add(ambientLight);
 // light2.position.set( 5, 8, -8 ).normalize();
 // scene.add(light2);
 
+const Gridstep = myGrid.step;
+const Gridsize = 49.00;
+const Griddivisions = 2.00*(Math.floor(Gridsize/Gridstep/4.00)*Gridstep+1.00);
+const Grddsz=Gridstep*Griddivisions;
+console.log(Griddivisions);
+console.log(Grddsz);
+const GridcolorCenterLine = 0x808080;//= ;
+const GridcolorGrid = 0x808080;
+const gridHelper = new GridHelper(Grddsz, Griddivisions,GridcolorCenterLine,GridcolorGrid);
+gridHelper.rotation.x = Math.PI / 2;
+gridHelper.position.z = 0;
+gridHelper.material.depthTest = false;
+gridHelper.renderOrder = 1;
+scene.add( gridHelper );
+
+const gridPlane = new PlaneGeometry( Grddsz, Grddsz, Griddivisions, Griddivisions );
 const gridPlaneMaterial = new MeshBasicMaterial( {
   color: 'green', 
   side: DoubleSide,
+  //transparent: true,
+  //opacity: 0.500,
   visible: false,
   wireframe: true
 } );
-
-const gui = new GUI();
-
-const myGrid = {
-	//myBoolean: true,
-	//myString: "lil-gui",
-	step: 1.50,
-  GridMinimumSize:40
-};
-
-gui.add( myGrid, 'step', 0.05, 5.0, 0.05);  
-gui.add( myGrid, 'GridMinimumSize', 1.00, 100, 1.00);   
-
-const Gridstep = myGrid.step;
-const GridMinSize = 62.00;
-//const Griddivisions = 2.00*(Math.floor(Gridsize/Gridstep/4.00)*Gridstep+1.00);
-
-const GridcolorCenterLine = 0x808080;//= ;
-const GridcolorGrid = 0x808080;
+const plane = new Mesh( gridPlane, gridPlaneMaterial );
+plane.renderOrder = 2;
+scene.add( plane );
 
 
-function GridDivide(GridMinSize, step){
-  const divisionsNumber = 2.00*(Math.floor(GridMinSize/step/2.00)+1.00);
-  console.log("numero di suddivisioni =", divisionsNumber);
-  return divisionsNumber;
-}
-
-const Griddivisions = GridDivide(GridMinSize, Gridstep);
-const actualGridSize = Gridstep*Griddivisions;
-console.log(Griddivisions);
-console.log(actualGridSize);
-
-
-function createGridHelper(){
-  const grdHlpr = new GridHelper(actualGridSize, Griddivisions,GridcolorCenterLine,GridcolorGrid);
-  grdHlpr.rotation.x = Math.PI / 2;
-  grdHlpr.position.z = 0;
-  grdHlpr.material.depthTest = false;
-  grdHlpr.renderOrder = 0;
-  scene.add( grdHlpr );
-  return grdHlpr;
-}
-
-function createGridPlane(){
-  const grdPln = new PlaneGeometry( actualGridSize, actualGridSize, Griddivisions, Griddivisions );
-  const plane = new Mesh( grdPln, gridPlaneMaterial );
-  plane.renderOrder = 2;
-  scene.add( plane );
-  return plane;
-}
-
-
-
-const grid = createGridHelper();
-const gridPlane = createGridPlane();
-
-const axesHelper = new AxesHelper( actualGridSize*10.0 );
+const axesHelper = new AxesHelper( Gridsize*10.0 );
 axesHelper.renderOrder = 2;
 scene.add( axesHelper );
 
@@ -402,7 +377,7 @@ window.addEventListener('mousemove', (event)=>{
   snapLabel.visible=false;
   mouseLabel.visible=false;
   raycaster.setFromCamera(mouse, camera);
-  const intersections = raycaster.intersectObject(gridPlane);
+  const intersections = raycaster.intersectObject(plane);
   if(!intersections.length==0){
     const Snpd=Snap(intersections, snapRadius)
     if (Snpd.snapped){
@@ -434,7 +409,7 @@ window.addEventListener('mousedown', (event)=>{
 	mouse.y = - (event.clientY / canvas.clientHeight) * 2 + 1;
   setCursorByID('three-canvas','default');
   raycaster.setFromCamera(mouse, camera);
-  const intersections = raycaster.intersectObject(gridPlane);
+  const intersections = raycaster.intersectObject(plane);
   if(!intersections.length==0){
     const Snpd=Snap(intersections, snapRadius)
     if (Snpd.snapped){
